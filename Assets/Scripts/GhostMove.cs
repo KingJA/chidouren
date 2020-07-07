@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using Random = UnityEngine.Random;
+using UnityEngine.SceneManagement;
 
 public class GhostMove : MonoBehaviour {
     public GameObject[] wayPointsGo;
@@ -13,15 +11,16 @@ public class GhostMove : MonoBehaviour {
 
     private void Start(){
         startPos = transform.position + new Vector3(0, 3, 0);
-        initPath();
+        initPath(wayPointsGo[GameManager.Instance.usingIndex[GetComponent<SpriteRenderer>().sortingOrder - 2]]);
     }
 
-    private void initPath(){
+    private void initPath(GameObject gameObject){
         wayPoints.Clear();
-        foreach (Transform t in wayPointsGo[Random.Range(0, wayPointsGo.Length)].transform) {
+        foreach (Transform t in gameObject.transform) {
             wayPoints.Add(t.position);
         }
-        wayPoints.Insert(0,startPos);
+
+        wayPoints.Insert(0, startPos);
         wayPoints.Add(startPos);
     }
 
@@ -35,7 +34,7 @@ public class GhostMove : MonoBehaviour {
             index++;
             if (index >= wayPoints.Count) {
                 index = 0;
-                initPath();
+                initPath(wayPointsGo[GameManager.Instance.usingIndex[GetComponent<SpriteRenderer>().sortingOrder - 2]]);
             }
         }
 
@@ -47,7 +46,22 @@ public class GhostMove : MonoBehaviour {
 
     private void OnTriggerEnter2D(Collider2D other){
         if (other.gameObject.name == "Pacman") {
-            Destroy(other.gameObject);
+            if (GameManager.Instance.isSuperPacman) {
+                //碰到超级吃豆人,回老家
+                transform.position = startPos - new Vector3(0, 3, 0);
+                index = 0;
+                GameManager.Instance.score += 500;
+            }
+            else {
+                other.gameObject.SetActive(false);
+                GameManager.Instance.gamePanel.SetActive(false);
+                Instantiate(GameManager.Instance.gameoverPrefab);
+                Invoke("Restart",3f);
+            }
         }
+    }
+
+    private void Restart(){
+        SceneManager.LoadScene(0);
     }
 }
